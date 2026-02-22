@@ -1,0 +1,5 @@
+[
+  { "start": "2026-03-14", "end": "2026-04-12", "label": "Spring break likely (varies by district)", "confidence": "LIKELY" },
+  { "start": "2026-06-01", "end": "2026-08-16", "label": "Summer break likely (varies by district)", "confidence": "LIKELY" },
+  { "start": "2026-12-19", "end": "2027-01-11", "label": "Winter break likely (varies by district)", "confidence": "LIKELY" }
+]
