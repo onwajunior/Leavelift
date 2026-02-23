@@ -674,7 +674,7 @@ function HomeInner() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-x-hidden">
       {/* Background photo (sunset beach) */}
       <div
         aria-hidden
@@ -693,12 +693,12 @@ function HomeInner() {
 
       <div className="relative z-10">
       <header className="sticky top-0 z-40 border-b border-gray-200/70 bg-white/80 backdrop-blur">
-        <div className="max-w-[1040px] mx-auto px-6 py-3 flex items-center gap-3">
-          <div className="min-w-0 flex-1 flex items-center gap-4">
+        <div className="max-w-[1040px] mx-auto px-4 sm:px-6 py-3 flex items-center gap-x-3 gap-y-2 flex-wrap">
+          <div className="min-w-0 flex-1 flex items-center gap-3 sm:gap-4 flex-wrap">
             <img
               src="/brand/wordmark-transparent.png"
               alt="Leavelift"
-              className="h-16 md:h-20 w-auto object-contain flex-none"
+              className="h-12 sm:h-16 md:h-20 w-auto object-contain flex-none"
             />
             <div className="min-w-0">
               <div className="text-sm font-semibold text-gray-900 leading-tight">Your calendar is leaking time.</div>
@@ -708,7 +708,7 @@ function HomeInner() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-none">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-none ml-auto">
             <CopyLinkButton />
             <button
               type="button"
@@ -792,7 +792,7 @@ function HomeInner() {
         </div>
       </header>
 
-      <main className="max-w-[1040px] mx-auto px-6 py-6">
+      <main className="max-w-[1040px] mx-auto px-4 sm:px-6 py-6">
         <div className="mb-5">
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Double your life without quitting your job.</h1>
           <p className="mt-1 text-sm text-gray-600">
@@ -884,7 +884,7 @@ function HomeInner() {
                             max={60}
                             value={fixedLength}
                             onChange={(e) => setFixedLength(Number(e.target.value))}
-                            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 w-[120px]"
+                            className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 w-full sm:w-[120px] max-w-[160px]"
                           />
                         </div>
                         <label className="flex items-center gap-2.5 mt-2.5">
@@ -1005,7 +1005,7 @@ function HomeInner() {
                             <select
                               value={newBreakType}
                               onChange={(e) => setNewBreakType(e.target.value as any)}
-                              className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 w-[200px]"
+                              className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 w-full sm:w-[200px]"
                             >
                               <option value="SCHOOL_BREAK">School break</option>
                               <option value="OFFICE_CLOSED">Office closed</option>
@@ -1013,7 +1013,7 @@ function HomeInner() {
                             </select>
                           </label>
 
-                          <label className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                          <label className="flex flex-col gap-1 w-full sm:flex-1 min-w-0">
                             <span className="text-xs font-semibold">Label</span>
                             <input
                               value={newBreakLabel}
@@ -1072,7 +1072,7 @@ function HomeInner() {
                                         <select
                                           value={editBreakType}
                                           onChange={(e) => setEditBreakType(e.target.value as any)}
-                                          className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 w-[200px]"
+                                          className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 w-full sm:w-[200px]"
                                         >
                                           <option value="SCHOOL_BREAK">School break</option>
                                           <option value="OFFICE_CLOSED">Office closed</option>
@@ -1080,7 +1080,7 @@ function HomeInner() {
                                         </select>
                                       </label>
 
-                                      <label className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                                      <label className="flex flex-col gap-1 w-full sm:flex-1 min-w-0">
                                         <span className="text-xs font-semibold">Label</span>
                                         <input
                                           value={editBreakLabel}
@@ -1143,7 +1143,7 @@ function HomeInner() {
                                         >
                                           {b.type === "SCHOOL_BREAK" ? "School break" : b.type === "OFFICE_CLOSED" ? "Office closed" : "Blackout"}
                                         </span>
-                                        <span className="font-semibold truncate">{b.label}</span>
+                                        <span className="font-semibold break-words">{b.label}</span>
                                       </div>
                                       <div className="text-xs text-gray-500 mt-0.5 font-mono">{b.start} → {b.end}</div>
                                     </div>
@@ -1324,7 +1324,7 @@ function HomeInner() {
                         {g.items.map((r) => (
                           <div key={`${r.start}_${r.end}`} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-gray-200 bg-white">
                             <div className="min-w-0">
-                              <div className="font-semibold truncate font-mono">{r.start} → {r.end}</div>
+                              <div className="font-semibold font-mono break-words">{r.start} → {r.end}</div>
                               <div className="text-xs text-gray-500 mt-0.5">
                                 <span className="inline-flex items-center gap-2 flex-wrap">
                                   <span>{r.totalDays} days off</span>
@@ -1335,7 +1335,7 @@ function HomeInner() {
                                 </span>
                               </div>
                             </div>
-                            <div className="flex flex-col items-end gap-1 text-xs text-gray-700 whitespace-nowrap">
+                            <div className="flex flex-wrap items-center justify-end gap-1.5 text-[11px] sm:text-xs text-gray-700">
                               <span className="px-2 py-0.5 rounded-full border border-gray-200 bg-gray-50">
                                 Weekends <b>{r.weekendsUsed}</b>
                               </span>
