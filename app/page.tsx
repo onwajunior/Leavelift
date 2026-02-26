@@ -3,10 +3,15 @@
 import { useEffect, useMemo, useState, useCallback, useRef, Suspense } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import allHolidays from "../data/holidays.us.2025-2035.json";
+import allHolidays from "../data/holidays.global.2025-2035.json";
+import holidaySubdivisions from "../data/holiday_subdivisions.json";
 import schoolWindows from "../data/school_windows.us.json";
 import { buildTopWindows, diagnoseEmptyResults, CustomBreak, CustomBreakType, EmptyReason, RankedWindow } from "../lib/leavelift";
 import { track } from "../lib/analytics";
+
+const COUNTRIES: Record<string, string> = (holidaySubdivisions as any).countries ?? { US: "United States" };
+type CountrySubdivision = { code: string; name: string };
+const COUNTRY_SUBDIVISIONS: Record<string, CountrySubdivision[]> = (holidaySubdivisions as any).subdivisions ?? {};
 
 const US_STATES: Record<string, string> = {
   AL: "Alabama",
@@ -143,9 +148,17 @@ function HomeInner() {
     "w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400";
 
   // Filter state — seeded from URL on first render
+  const initialCountry = sp("country", "US");
   const [ptoDays, setPtoDays] = useState<number>(() => Number(sp("pto", "10")));
   const [hasKids, setHasKids] = useState<boolean>(() => sp("kids", "1") === "1");
-  const [state, setState] = useState<string>(() => sp("state", "CA"));
+  const [country, setCountry] = useState<string>(() => initialCountry);
+  const [state, setState] = useState<string>(() => {
+    const fromUrl = sp("state", "");
+    if (fromUrl) return fromUrl;
+    if (initialCountry === "US") return "CA";
+    const subs = COUNTRY_SUBDIVISIONS[initialCountry] ?? [];
+    return subs[0]?.code ?? "";
+  });
   const [tripMode, setTripMode] = useState<"fixed" | "range" | "best">(() => (sp("mode", "range") as any));
   const [fixedLength, setFixedLength] = useState<number>(() => Number(sp("fixedLen", "7")));
   const [lengthPreset, setLengthPreset] = useState<"short" | "medium" | "long">(() => (sp("preset", "medium") as any));
@@ -242,9 +255,17 @@ function HomeInner() {
     return "✨ Sneaky Long Weekend";
   }
 
+  function locationLabel(): string {
+    const cName = COUNTRIES[country] ?? country;
+    if (country === "US") return US_STATES[state] ?? state;
+    const subs = COUNTRY_SUBDIVISIONS[country] ?? [];
+    const sName = subs.find((x) => x.code === state)?.name ?? state;
+    return state ? `${cName} — ${sName}` : cName;
+  }
+
   function shareMessageForWindow(r: RankedWindow) {
     const gained = Math.max(0, r.totalDays - r.ptoUsed);
-    const stateName = US_STATES[state] ?? state;
+    const stateName = locationLabel();
     const base = `${r.ptoUsed} PTO → ${r.totalDays} days off (${r.start} → ${r.end})`;
     const extra = gained > 0 ? ` — gained ${gained} free ${plural(gained, "day", "days")}` : "";
     return `I just found a PTO window in ${stateName} for ${year}: ${base}${extra}. Try yours: ${window.location.href}`;
@@ -253,6 +274,7 @@ function HomeInner() {
   const isDefaultFilters =
     ptoDays === 10 &&
     hasKids === true &&
+    country === "US" &&
     state === "CA" &&
     tripMode === "range" &&
     fixedLength === 7 &&
@@ -344,6 +366,7 @@ function HomeInner() {
   function resetFilters() {
     setPtoDays(10);
     setHasKids(true);
+    setCountry("US");
     setState("CA");
     setTripMode("range");
     setFixedLength(7);
@@ -455,6 +478,7 @@ function HomeInner() {
   const syncURL = useCallback(
     (overrides: Record<string, string> = {}) => {
       const params = new URLSearchParams({
+        country,
         state,
         year: String(year),
         pto: String(ptoDays),
@@ -471,10 +495,10 @@ function HomeInner() {
       });
       router.replace(`?${params.toString()}`, { scroll: false });
     },
-    [state, year, ptoDays, hasKids, tripMode, fixedLength, lengthPreset, fixedFlexible, weekdaysOnly, schoolBreakMode, travelStart, travelEnd, router]
+    [country, state, year, ptoDays, hasKids, tripMode, fixedLength, lengthPreset, fixedFlexible, weekdaysOnly, schoolBreakMode, travelStart, travelEnd, router]
   );
 
-  useEffect(() => { syncURL(); }, [state, year, ptoDays, hasKids, tripMode, fixedLength, lengthPreset, fixedFlexible, weekdaysOnly, schoolBreakMode, travelStart, travelEnd]);
+  useEffect(() => { syncURL(); }, [country, state, year, ptoDays, hasKids, tripMode, fixedLength, lengthPreset, fixedFlexible, weekdaysOnly, schoolBreakMode, travelStart, travelEnd]);
 
   const lengths = useMemo(() => {
     if (tripMode === "fixed") {
@@ -493,11 +517,12 @@ function HomeInner() {
   const computeAllResults = useCallback((): RankedWindow[] => {
     return buildTopWindows({
       year,
+      country,
       state,
       ptoDays,
       hasKids,
       holidays: allHolidays as any,
-      schoolWindows: schoolWindows as any,
+      schoolWindows: (country === "US" ? (schoolWindows as any) : []) as any,
       customBreaks,
       lengths,
       topN: 25,
@@ -505,11 +530,12 @@ function HomeInner() {
         tripMode === "best" ? "BEST" : tripMode === "fixed" ? "FIXED_TARGET" : "EFFICIENCY",
       targetLength: tripMode === "fixed" ? fixedLength : undefined,
       weekdaysOnly,
-      schoolBreakMode,
+      schoolBreakMode: country === "US" ? schoolBreakMode : "ANY",
       dateRange: travelStart && travelEnd ? { start: travelStart, end: travelEnd } : undefined,
     });
   }, [
     year,
+    country,
     state,
     ptoDays,
     hasKids,
@@ -568,33 +594,35 @@ function HomeInner() {
     if (results.length > 0) return null;
     return diagnoseEmptyResults({
       year,
+      country,
       state,
       ptoDays,
       hasKids,
       holidays: allHolidays as any,
-      schoolWindows: schoolWindows as any,
+      schoolWindows: (country === "US" ? (schoolWindows as any) : []) as any,
       customBreaks,
       lengths,
-      schoolBreakMode,
+      schoolBreakMode: country === "US" ? schoolBreakMode : "ANY",
       dateRange: travelStart && travelEnd ? { start: travelStart, end: travelEnd } : undefined,
     });
-  }, [results.length, year, state, ptoDays, hasKids, customBreaks, lengths, schoolBreakMode, travelStart, travelEnd]);
+  }, [results.length, year, country, state, ptoDays, hasKids, customBreaks, lengths, schoolBreakMode, travelStart, travelEnd]);
 
   // Track when results are generated (debounced to final settled state)
   useEffect(() => {
     if (isUpdatingResults) return;
     track("results_generated", {
+      country,
       state,
       year,
       ptoDays,
       tripMode,
       hasKids,
       weekdaysOnly,
-      schoolBreakMode,
+      schoolBreakMode: country === "US" ? schoolBreakMode : "ANY",
       resultsCount: results.length,
       topEfficiency: results[0]?.efficiency ?? 0,
     });
-  }, [results, isUpdatingResults]);
+  }, [results, isUpdatingResults, country, state, year, ptoDays, tripMode, hasKids, weekdaysOnly, schoolBreakMode]);
 
   function unlockLocallyAndExport() {
     window.localStorage.setItem("leavelift_beta_unlocked", "true");
@@ -646,7 +674,7 @@ function HomeInner() {
       </head>
       <body>
         <h2>Leavelift Vacation Plan</h2>
-        <p>Generated: ${generatedAt} · State: ${US_STATES[state] ?? state} · Year: ${year}</p>
+        <p>Generated: ${generatedAt} · Location: ${(locationLabel() as any)} · Year: ${year}</p>
         <table>
           <thead>
             <tr>
@@ -820,17 +848,54 @@ function HomeInner() {
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Basics</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                   <label className="flex flex-col gap-1.5 sm:col-span-2">
-                    <span className="font-semibold">State</span>
+                    <span className="font-semibold">Country</span>
                     <select
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
+                      value={country}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setCountry(next);
+                        if (next === "US") {
+                          setState("CA");
+                          return;
+                        }
+                        const subs = COUNTRY_SUBDIVISIONS[next] ?? [];
+                        setState(subs[0]?.code ?? "");
+                      }}
                       className={controlClass}
                     >
-                      {Object.entries(US_STATES).map(([code, name]) => (
-                        <option key={code} value={code}>{name} ({code})</option>
+                      {Object.entries(COUNTRIES).map(([code, name]) => (
+                        <option key={code} value={code}>{name}</option>
                       ))}
                     </select>
                   </label>
+
+                  {country === "US" ? (
+                    <label className="flex flex-col gap-1.5 sm:col-span-2">
+                      <span className="font-semibold">State</span>
+                      <select
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        className={controlClass}
+                      >
+                        {Object.entries(US_STATES).map(([code, name]) => (
+                          <option key={code} value={code}>{name} ({code})</option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (COUNTRY_SUBDIVISIONS[country]?.length ?? 0) > 0 ? (
+                    <label className="flex flex-col gap-1.5 sm:col-span-2">
+                      <span className="font-semibold">Region</span>
+                      <select
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        className={controlClass}
+                      >
+                        {(COUNTRY_SUBDIVISIONS[country] ?? []).map((s) => (
+                          <option key={s.code} value={s.code}>{s.name} ({s.code})</option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
 
                   <label className="flex flex-col gap-1.5">
                     <span className="font-semibold">Planning year</span>
@@ -927,7 +992,7 @@ function HomeInner() {
                         <span className="font-semibold">School-age kids</span>
                       </label>
 
-                      {hasKids && (
+                      {hasKids && country === "US" && (
                         <label className="flex flex-col gap-1.5">
                           <span className="font-semibold">School break</span>
                           <select
@@ -951,6 +1016,13 @@ function HomeInner() {
                             </details>
                           </div>
                         </label>
+                      )}
+
+                      {hasKids && country !== "US" && (
+                        <div className="text-[11px] text-gray-500">
+                          School break alignment is currently available for the United States only. You can still use Custom breaks to add school
+                          dates for your area.
+                        </div>
                       )}
 
                       <div className="flex flex-col gap-1.5">
@@ -1229,7 +1301,7 @@ function HomeInner() {
                       <>Your travel window (<b>{travelStart} → {travelEnd}</b>) is too short for the requested trip length. Try <b>widening the travel window</b> or selecting a <b>shorter trip length</b>.</>
                     )}
                     {emptyReason === "no_holidays_for_state_year" && (
-                      <>No holiday data found for <b>{US_STATES[state] ?? state}</b> in <b>{year}</b>. Please try a different year or state.</>
+                      <>No holiday data found for <b>{locationLabel()}</b> in <b>{year}</b>. Please try a different year or location.</>
                     )}
                     {emptyReason === "unknown" && (
                       <>Try increasing your PTO days, relaxing your filters, or switching to <b>"Best"</b> mode.</>
@@ -1539,9 +1611,9 @@ function HomeInner() {
                 <div className="mt-1 text-2xl font-extrabold tracking-tight">
                   {bestWindow.ptoUsed} PTO → {bestWindow.totalDays} Days Off
                 </div>
-                <div className="mt-2 text-sm text-gray-600 font-mono">
-                  {bestWindow.start} → {bestWindow.end} · {US_STATES[state] ?? state} · {year}
-                </div>
+                      <div className="mt-2 text-sm text-gray-600 font-mono">
+                        {bestWindow.start} → {bestWindow.end} · {locationLabel()} · {year}
+                      </div>
 
                 {Math.max(0, bestWindow.totalDays - bestWindow.ptoUsed) > 0 && (
                   <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">

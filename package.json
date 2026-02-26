@@ -8,7 +8,8 @@
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "lint": "eslint",
     "generate:school-windows": "node scripts/generate-school-windows.mjs",
-    "check:school-windows": "node scripts/generate-school-windows.mjs --check"
+    "check:school-windows": "node scripts/generate-school-windows.mjs --check",
+    "generate:holidays-global": "node scripts/generate-holidays-global.mjs"
   },
   "dependencies": {
     "date-holidays": "^3.26.8",

@@ -1,7 +1,8 @@
 type Holiday = {
   date: string;    // YYYY-MM-DD
   name: string;
-  state: string;   // e.g. "CA", "TX"
+  country?: string; // e.g. "US", "GB"
+  state?: string;   // e.g. "CA", "TX", "ENG"
   substitute: boolean;
 };
 
@@ -160,6 +161,7 @@ export type EmptyReason =
 
 export function diagnoseEmptyResults(params: {
   year: number;
+  country?: string;
   state?: string;
   ptoDays: number;
   hasKids: boolean;
@@ -170,11 +172,14 @@ export function diagnoseEmptyResults(params: {
   schoolBreakMode: "ANY" | "REQUIRE";
   dateRange?: { start: string; end: string };
 }): EmptyReason {
-  const { year, state, ptoDays, hasKids, holidays, schoolWindows, customBreaks = [], lengths, schoolBreakMode, dateRange } = params;
+  const { year, country = "US", state, ptoDays, hasKids, holidays, schoolWindows, customBreaks = [], lengths, schoolBreakMode, dateRange } = params;
 
   // 1. No holiday data for this state/year combination?
   const yearStateHolidays = holidays.filter(
-    (h) => h.date.startsWith(String(year)) && (!state || h.state === state)
+    (h) =>
+      h.date.startsWith(String(year)) &&
+      ((h.country ?? "US") === country) &&
+      (!state || h.state === state)
   );
   if (yearStateHolidays.length === 0) return "no_holidays_for_state_year";
 
@@ -227,6 +232,7 @@ export function diagnoseEmptyResults(params: {
 
 export function buildTopWindows(params: {
   year?: number;
+  country?: string;
   state?: string;
   ptoDays: number;
   hasKids: boolean;
@@ -243,6 +249,7 @@ export function buildTopWindows(params: {
 }): RankedWindow[] {
   const {
     year = 2026,
+    country = "US",
     state,
     ptoDays,
     hasKids,
@@ -261,6 +268,7 @@ export function buildTopWindows(params: {
   const yearHolidays = holidays.filter(
     (h) =>
       h.date.startsWith(String(year)) &&
+      ((h.country ?? "US") === country) &&
       (!state || h.state === state)
   );
 

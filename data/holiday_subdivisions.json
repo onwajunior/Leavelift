@@ -1,0 +1,388 @@
+{
+  "countries": {
+    "US": "United States",
+    "GB": "United Kingdom",
+    "PL": "Poland",
+    "IE": "Ireland",
+    "DE": "Germany",
+    "FR": "France",
+    "NL": "Netherlands",
+    "BE": "Belgium",
+    "SA": "Saudi Arabia",
+    "SG": "Singapore"
+  },
+  "subdivisions": {
+    "US": [
+      {
+        "code": "AK",
+        "name": "Alaska"
+      },
+      {
+        "code": "AL",
+        "name": "Alabama"
+      },
+      {
+        "code": "AR",
+        "name": "Arkansas"
+      },
+      {
+        "code": "AZ",
+        "name": "Arizona"
+      },
+      {
+        "code": "CA",
+        "name": "California"
+      },
+      {
+        "code": "CO",
+        "name": "Colorado"
+      },
+      {
+        "code": "CT",
+        "name": "Connecticut"
+      },
+      {
+        "code": "DC",
+        "name": "District of Columbia"
+      },
+      {
+        "code": "DE",
+        "name": "Delaware"
+      },
+      {
+        "code": "FL",
+        "name": "Florida"
+      },
+      {
+        "code": "GA",
+        "name": "Georgia"
+      },
+      {
+        "code": "HI",
+        "name": "Hawaii"
+      },
+      {
+        "code": "IA",
+        "name": "Iowa"
+      },
+      {
+        "code": "ID",
+        "name": "Idaho"
+      },
+      {
+        "code": "IL",
+        "name": "Illinois"
+      },
+      {
+        "code": "IN",
+        "name": "Indiana"
+      },
+      {
+        "code": "KS",
+        "name": "Kansas"
+      },
+      {
+        "code": "KY",
+        "name": "Kentucky"
+      },
+      {
+        "code": "LA",
+        "name": "Louisiana"
+      },
+      {
+        "code": "MA",
+        "name": "Massachusetts"
+      },
+      {
+        "code": "MD",
+        "name": "Maryland"
+      },
+      {
+        "code": "ME",
+        "name": "Maine"
+      },
+      {
+        "code": "MI",
+        "name": "Michigan"
+      },
+      {
+        "code": "MN",
+        "name": "Minnesota"
+      },
+      {
+        "code": "MO",
+        "name": "Missouri"
+      },
+      {
+        "code": "MS",
+        "name": "Mississippi"
+      },
+      {
+        "code": "MT",
+        "name": "Montana"
+      },
+      {
+        "code": "NC",
+        "name": "North Carolina"
+      },
+      {
+        "code": "ND",
+        "name": "North Dakota"
+      },
+      {
+        "code": "NE",
+        "name": "Nebraska"
+      },
+      {
+        "code": "NH",
+        "name": "New Hampshire"
+      },
+      {
+        "code": "NJ",
+        "name": "New Jersey"
+      },
+      {
+        "code": "NM",
+        "name": "New Mexico"
+      },
+      {
+        "code": "NV",
+        "name": "Nevada"
+      },
+      {
+        "code": "NY",
+        "name": "New York"
+      },
+      {
+        "code": "OH",
+        "name": "Ohio"
+      },
+      {
+        "code": "OK",
+        "name": "Oklahoma"
+      },
+      {
+        "code": "OR",
+        "name": "Oregon"
+      },
+      {
+        "code": "PA",
+        "name": "Pennsylvania"
+      },
+      {
+        "code": "RI",
+        "name": "Rhode Island"
+      },
+      {
+        "code": "SC",
+        "name": "South Carolina"
+      },
+      {
+        "code": "SD",
+        "name": "South Dakota"
+      },
+      {
+        "code": "TN",
+        "name": "Tennessee"
+      },
+      {
+        "code": "TX",
+        "name": "Texas"
+      },
+      {
+        "code": "UT",
+        "name": "Utah"
+      },
+      {
+        "code": "VA",
+        "name": "Virginia"
+      },
+      {
+        "code": "VT",
+        "name": "Vermont"
+      },
+      {
+        "code": "WA",
+        "name": "Washington"
+      },
+      {
+        "code": "WI",
+        "name": "Wisconsin"
+      },
+      {
+        "code": "WV",
+        "name": "West Virginia"
+      },
+      {
+        "code": "WY",
+        "name": "Wyoming"
+      }
+    ],
+    "GB": [
+      {
+        "code": "ALD",
+        "name": "Alderney"
+      },
+      {
+        "code": "ENG",
+        "name": "England"
+      },
+      {
+        "code": "NIR",
+        "name": "Northern Ireland"
+      },
+      {
+        "code": "SCT",
+        "name": "Scotland"
+      },
+      {
+        "code": "WLS",
+        "name": "Wales"
+      }
+    ],
+    "PL": [],
+    "IE": [],
+    "DE": [
+      {
+        "code": "BB",
+        "name": "Brandenburg"
+      },
+      {
+        "code": "BE",
+        "name": "Berlin"
+      },
+      {
+        "code": "BW",
+        "name": "Baden-Württemberg"
+      },
+      {
+        "code": "BY",
+        "name": "Bayern"
+      },
+      {
+        "code": "HB",
+        "name": "Hansestadt Bremen"
+      },
+      {
+        "code": "HE",
+        "name": "Hessen"
+      },
+      {
+        "code": "HH",
+        "name": "Hansestadt Hamburg"
+      },
+      {
+        "code": "MV",
+        "name": "Mecklenburg Vorpommern"
+      },
+      {
+        "code": "NI",
+        "name": "Niedersachsen"
+      },
+      {
+        "code": "NW",
+        "name": "Nordrhein-Westfalen"
+      },
+      {
+        "code": "RP",
+        "name": "Rheinland-Pfalz"
+      },
+      {
+        "code": "SH",
+        "name": "Schleswig-Holstein"
+      },
+      {
+        "code": "SL",
+        "name": "Saarland"
+      },
+      {
+        "code": "SN",
+        "name": "Sachsen"
+      },
+      {
+        "code": "ST",
+        "name": "Sachsen-Anhalt"
+      },
+      {
+        "code": "TH",
+        "name": "Thüringen"
+      }
+    ],
+    "FR": [
+      {
+        "code": "57",
+        "name": "Département Moselle"
+      },
+      {
+        "code": "67",
+        "name": "Département Bas-Rhin"
+      },
+      {
+        "code": "68",
+        "name": "Département Haut-Rhin"
+      },
+      {
+        "code": "BL",
+        "name": "Département et région d'outre-mer Saint Barthélemy"
+      },
+      {
+        "code": "GF",
+        "name": "Département et région d'outre-mer Guyane"
+      },
+      {
+        "code": "GP",
+        "name": "Département et région d'outre-mer Guadeloupe"
+      },
+      {
+        "code": "MF",
+        "name": "Département et région d'outre-mer Saint Martin"
+      },
+      {
+        "code": "MQ",
+        "name": "Département et région d'outre-mer Martinique"
+      },
+      {
+        "code": "RE",
+        "name": "Département et région d'outre-mer La Réunion"
+      },
+      {
+        "code": "YT",
+        "name": "Département et région d'outre-mer Mayotte"
+      }
+    ],
+    "NL": [
+      {
+        "code": "GR",
+        "name": "Groningen"
+      },
+      {
+        "code": "NH",
+        "name": "Noord-Holland"
+      },
+      {
+        "code": "ZH",
+        "name": "Zuid-Holland"
+      }
+    ],
+    "BE": [
+      {
+        "code": "BRU",
+        "name": "Bruxelles"
+      },
+      {
+        "code": "DE",
+        "name": "Deutschsprachige Gemeinschaft"
+      },
+      {
+        "code": "VLG",
+        "name": "Vlaamse Gemeenschap"
+      },
+      {
+        "code": "WAL",
+        "name": "Communauté française"
+      }
+    ],
+    "SA": [],
+    "SG": []
+  }
+}
