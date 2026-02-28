@@ -209,6 +209,45 @@ function HomeInner() {
     return m;
   }
 
+  function parseISODateUTC(iso: string): Date {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+
+  function formatISODateUTC(d: Date): string {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function addDaysUTC(d: Date, n: number): Date {
+    const x = new Date(d.getTime());
+    x.setUTCDate(x.getUTCDate() + n);
+    return x;
+  }
+
+  function isWeekendUTC(d: Date): boolean {
+    const day = d.getUTCDay();
+    return day === 0 || day === 6;
+  }
+
+  function expandWeekdayISODatesInRange(startISO: string, endISO: string, year: number): string[] {
+    const a = startISO <= endISO ? startISO : endISO;
+    const b = startISO <= endISO ? endISO : startISO;
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year}-12-31`;
+    const start = a < yearStart ? yearStart : a;
+    const end = b > yearEnd ? yearEnd : b;
+    if (end < yearStart || start > yearEnd) return [];
+    const out: string[] = [];
+    for (let d = parseISODateUTC(start); d <= parseISODateUTC(end); d = addDaysUTC(d, 1)) {
+      if (isWeekendUTC(d)) continue;
+      out.push(formatISODateUTC(d));
+    }
+    return out;
+  }
+
   function titleForWindow(r: RankedWindow, idx: number): string {
     // Rank #1 always gets the universal title.
     if (idx === 0) return "🥇 Best Overall";
@@ -513,6 +552,103 @@ function HomeInner() {
     if (lengthPreset === "long") return [11, 14];
     return [7, 9, 11];
   }, [tripMode, fixedLength, fixedFlexible, lengthPreset]);
+
+  const holidayLookup = useMemo(() => {
+    const yearPrefix = String(year);
+    const selectedCountry = country;
+    const selectedState = state;
+
+    const map = new Map<string, string>();
+    const set = new Set<string>();
+
+    const base = (allHolidays as any[]).filter((h) => {
+      if (!String(h.date).startsWith(yearPrefix)) return false;
+      if ((h.country ?? "US") !== selectedCountry) return false;
+      if (selectedState) return h.state === selectedState;
+      return !h.state;
+    });
+
+    for (const h of base) {
+      const iso = String(h.date);
+      const name = String(h.name);
+      set.add(iso);
+      const existing = map.get(iso);
+      if (!existing) map.set(iso, name);
+      else if (!existing.includes(name)) map.set(iso, `${existing}, ${name}`);
+    }
+
+    // Custom office closures behave like extra weekday holidays.
+    const officeClosed = customBreaks.filter((b) => b.type === "OFFICE_CLOSED");
+    for (const b of officeClosed) {
+      for (const iso of expandWeekdayISODatesInRange(b.start, b.end, year)) {
+        set.add(iso);
+        const label = b.label || "Office closed";
+        const existing = map.get(iso);
+        if (!existing) map.set(iso, label);
+        else if (!existing.includes(label)) map.set(iso, `${existing}, ${label}`);
+      }
+    }
+
+    return { set, map };
+  }, [year, country, state, customBreaks]);
+
+  function windowDayPlan(startISO: string, endISO: string) {
+    const start = parseISODateUTC(startISO);
+    const end = parseISODateUTC(endISO);
+    const pto: string[] = [];
+    const free: Array<{ iso: string; kind: "HOLIDAY" | "WEEKEND"; label?: string }> = [];
+    const days: Array<{
+      iso: string;
+      day: number;
+      kind: "PTO" | "HOLIDAY" | "WEEKEND";
+      label?: string;
+    }> = [];
+
+    for (let d = start; d <= end; d = addDaysUTC(d, 1)) {
+      const iso = formatISODateUTC(d);
+      const isWeekend = isWeekendUTC(d);
+      const holidayLabel = holidayLookup.map.get(iso);
+      const isHoliday = holidayLookup.set.has(iso);
+
+      let kind: "PTO" | "HOLIDAY" | "WEEKEND" = "PTO";
+      if (weekdaysOnly) {
+        // In weekday-only mode, weekends are ignored; holidays still count on weekdays.
+        if (!isWeekend && isHoliday) kind = "HOLIDAY";
+        else if (!isWeekend) kind = "PTO";
+        else continue;
+      } else {
+        if (isHoliday) kind = "HOLIDAY";
+        else if (isWeekend) kind = "WEEKEND";
+        else kind = "PTO";
+      }
+
+      if (kind === "PTO") pto.push(iso);
+      else free.push({ iso, kind, label: holidayLabel });
+
+      days.push({
+        iso,
+        day: d.getUTCDate(),
+        kind,
+        label: holidayLabel,
+      });
+    }
+
+    const weekStartsOn = country === "US" ? 0 : 1; // 0=Sun, 1=Mon
+    const header = weekStartsOn === 0 ? ["S", "M", "T", "W", "T", "F", "S"] : ["M", "T", "W", "T", "F", "S", "S"];
+
+    // Build a padded 7-col grid for the window days only.
+    const firstDow = start.getUTCDay(); // 0..6 Sun..Sat
+    const offset = (firstDow - weekStartsOn + 7) % 7;
+    const cells: Array<null | (typeof days)[number]> = [];
+    for (let i = 0; i < offset; i++) cells.push(null);
+    for (const x of days) cells.push(x);
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    const weeks: Array<Array<null | (typeof days)[number]>> = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
+    return { pto, free, weeks, header };
+  }
 
   const computeAllResults = useCallback((): RankedWindow[] => {
     return buildTopWindows({
@@ -1334,7 +1470,7 @@ function HomeInner() {
                           <span className="text-xs px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50">
                             Holidays <b>{r.holidaysUsed}</b>
                           </span>
-                          {hasKids && (
+                          {hasKids && (country === "US" || customBreaks.some((b) => b.type === "SCHOOL_BREAK")) && (
                             <span
                               className={`text-xs px-2.5 py-1 rounded-full border ${
                                 r.flags.overlapsLikelySchoolBreak
@@ -1364,25 +1500,141 @@ function HomeInner() {
                       )}
 
                       <details className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                        <summary className="cursor-pointer font-semibold">Why it works</summary>
-                        <div className="mt-2 text-sm text-gray-700 space-y-2">
-                          <p>
-                            Here’s the trick: you only spend <b>{r.ptoUsed}</b> PTO days, and let the calendar do the rest.
-                            Between <b>{r.weekendsUsed}</b> weekends and <b>{r.holidaysUsed}</b> holidays, this stretches into{" "}
-                            <b>{r.totalDays}</b> consecutive days off.
-                          </p>
-                          {r.holidayNames.length > 0 && (
-                            <p>
-                              The “free boost” comes from: <b>{r.holidayNames.join(", ")}</b>.
-                            </p>
-                          )}
-                          {hasKids && (
-                            <p>
-                              Kid factor: this window is{" "}
-                              <b>{r.flags.overlapsLikelySchoolBreak ? "likely" : "not obviously"}</b> aligned with a school break.
-                            </p>
-                          )}
-                        </div>
+                        <summary className="cursor-pointer font-semibold">
+                          Turn <b>{r.ptoUsed}</b> PTO days into <b>{r.totalDays}</b> days off
+                        </summary>
+                        {(() => {
+                          const plan = windowDayPlan(r.start, r.end);
+                          const fmt = (iso: string) =>
+                            parseISODateUTC(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+                          return (
+                            <div className="mt-3">
+                              <div className="flex items-center justify-between gap-3 flex-wrap">
+                                <div className="text-sm font-semibold text-gray-900">
+                                  Exact days to request off
+                                </div>
+                                <details className="relative">
+                                  <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-300 bg-white inline-flex items-center gap-1.5">
+                                    Why this works
+                                    <span className="inline-flex items-center justify-center h-4 w-4 rounded-full border border-gray-300 text-[11px] leading-none">
+                                      i
+                                    </span>
+                                  </summary>
+                                  <div className="absolute right-0 mt-2 w-[min(360px,85vw)] rounded-xl border border-gray-200 bg-white p-3 shadow-lg z-20">
+                                    <div className="text-sm font-extrabold">Why this works</div>
+                                    <div className="mt-2 text-sm text-gray-700 space-y-2">
+                                      <p>
+                                        You only spend <b>{r.ptoUsed}</b> PTO days, and let the calendar do the rest.
+                                        Between <b>{r.weekendsUsed}</b> weekends and <b>{r.holidaysUsed}</b> holidays, this stretches into{" "}
+                                        <b>{r.totalDays}</b> consecutive days off.
+                                      </p>
+                                      {r.holidayNames.length > 0 && (
+                                        <p>
+                                          Free boost from: <b>{r.holidayNames.join(", ")}</b>.
+                                        </p>
+                                      )}
+                                      {hasKids && (country === "US" || customBreaks.some((b) => b.type === "SCHOOL_BREAK")) && (
+                                        <p>
+                                          Kid factor: this window is{" "}
+                                          <b>{r.flags.overlapsLikelySchoolBreak ? "likely" : "not obviously"}</b> aligned with a school break.
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </details>
+                              </div>
+
+                              <div className="mt-3 grid gap-3">
+                                <div>
+                                  <div className="text-xs font-semibold text-gray-700">Request off (PTO)</div>
+                                  {plan.pto.length === 0 ? (
+                                    <div className="text-xs text-gray-500 mt-1">No PTO needed.</div>
+                                  ) : (
+                                    <div className="mt-1 flex flex-wrap gap-1.5">
+                                      {plan.pto.map((iso) => (
+                                        <span
+                                          key={iso}
+                                          className="inline-flex items-center rounded-full bg-gray-900 text-white px-2 py-1 text-[11px] font-semibold"
+                                          title={iso}
+                                        >
+                                          {fmt(iso)}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <div className="text-xs font-semibold text-gray-700">Free days</div>
+                                  <div className="mt-1 flex flex-wrap gap-1.5">
+                                    {plan.free.map((x) => (
+                                      <span
+                                        key={x.iso}
+                                        className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold border ${
+                                          x.kind === "HOLIDAY"
+                                            ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                                            : "border-gray-200 bg-gray-100 text-gray-900"
+                                        }`}
+                                        title={x.label ? `${fmt(x.iso)} — ${x.label}` : fmt(x.iso)}
+                                      >
+                                        {fmt(x.iso)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="rounded-xl border border-gray-200 bg-white p-3">
+                                  <div className="grid grid-cols-7 gap-1 text-[11px] text-gray-500 font-semibold mb-2">
+                                    {plan.header.map((d) => (
+                                      <div key={d} className="text-center">{d}</div>
+                                    ))}
+                                  </div>
+                                  <div className="grid gap-1">
+                                    {plan.weeks.map((week, wi) => (
+                                      <div key={wi} className="grid grid-cols-7 gap-1">
+                                        {week.map((cell, ci) => {
+                                          if (!cell) return <div key={ci} className="h-8" />;
+                                          const base =
+                                            "h-8 rounded-md flex items-center justify-center text-xs font-semibold border";
+                                          const cls =
+                                            cell.kind === "PTO"
+                                              ? "bg-gray-900 text-white border-gray-900"
+                                              : cell.kind === "HOLIDAY"
+                                                ? "bg-emerald-100 text-emerald-900 border-emerald-200"
+                                                : "bg-gray-100 text-gray-900 border-gray-200";
+                                          const title =
+                                            cell.kind === "HOLIDAY" && cell.label
+                                              ? `${fmt(cell.iso)} — ${cell.label}`
+                                              : `${fmt(cell.iso)} — ${cell.kind === "PTO" ? "PTO" : cell.kind === "WEEKEND" ? "Weekend" : "Holiday"}`;
+                                          return (
+                                            <div key={ci} className={`${base} ${cls}`} title={title}>
+                                              {cell.day}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-600">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <span className="h-3 w-3 rounded-sm bg-gray-900 inline-block" />
+                                      PTO
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <span className="h-3 w-3 rounded-sm bg-emerald-100 border border-emerald-200 inline-block" />
+                                      Holiday
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <span className="h-3 w-3 rounded-sm bg-gray-100 border border-gray-200 inline-block" />
+                                      Weekend
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </details>
                     </div>
                   ))}
